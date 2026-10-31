@@ -8,7 +8,7 @@ If you want to see what this project is all about and how it performs in action,
 
 | Resource | YouTube Link | Description |
 | --- | --- | --- |
-| **Introductory Video** | [Watch on YouTube](https://youtu.be/ddWUQlWI6V8) | A quick overview of our team, the problem statement, and our architectural approach. |
+| **Introductory Video** | [Watch on YouTube](https://youtu.be/ddWUQlWI6V8) | A quick overview of our team **'CICADA'**, the problem statement, and our architectural approach. |
 | **Live Working Demo** | [Watch on YouTube](https://youtu.be/rsqEHW8-8YM) | A walkthrough of the system running live, showing how it detects anomalies and handles MRT updates. |
 
 ---
@@ -78,4 +78,4 @@ Head over to the `src/` directory and execute the main pipeline to process the s
 
 ## 👥 Team & Acknowledgments
 
-Built with ❤️ by our hackathon team **CICADA**. Feel free to drop us a note or check out the demo video for a deep dive into the code!
+Built with ❤️ by our hackathon team **'CICADA'**. Feel free to drop us a note or check out the demo video for a deep dive into the code!
