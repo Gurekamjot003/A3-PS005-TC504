@@ -58,6 +58,7 @@ class rule_engine:
             return status.ORIGIN_ANOMALY
         if prefix_length > data.max_len:
             return status.SUBPREFIX_ANOMALY
+        self.trie.insert(network_address, prefix_length, data)  # update the trie with the new prefix length
         return status.VALID
 
     def __init__(self, full_data):
@@ -66,3 +67,4 @@ class rule_engine:
             network_address, prefix_length = self.pref_parser(prefix)
             data = self.bgp_data(asn, max_len)
             self.trie.insert(network_address, prefix_length, data)
+
