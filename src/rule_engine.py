@@ -23,10 +23,7 @@ class rule_engine:
 
         def insert(self, network_address, prefix_length, data=None):
             node = self.root
-            if prefix_length == 0:
-                node["data"] = data
-                return
-            for i in range(31, 31 - prefix_length, -1):
+            for i in range(prefix_length - 1, -1, -1):
                 bit = (network_address >> i) & 1
                 if bit not in node:
                     node[bit] = {}
@@ -35,7 +32,7 @@ class rule_engine:
 
         def search(self, network_address):
             node = self.root
-            best_match = self.root.get("data")
+            best_match = None
             for i in range(31, -1, -1):
                 bit = (network_address >> i) & 1
                 if bit not in node:
@@ -52,10 +49,9 @@ class rule_engine:
         prefix_length = int(network.prefixlen)
         return network_address, prefix_length
 
-    def rule_baseline(self, asn, prefix, data=None):
+    def rule_baseline(self, asn, prefix):
         network_address, prefix_length = self.pref_parser(prefix)
-        if data is None:
-            data = self.trie.search(network_address)
+        data = self.trie.search(network_address)
         if data is None:
             return status.UNKNOWN
         if asn != data.asn:
