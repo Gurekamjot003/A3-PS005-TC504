@@ -1,9 +1,12 @@
-import csv, glob, json, lzma, os
+import csv, json, lzma
 from datetime import datetime, timezone
+from pathlib import Path
+
 from mrtparse import Reader
 
-MRT_GLOB = "data/mrt/updates.*"
-ROA_GLOB = "data/roa/*.csv.xz"
+DATA_DIR = Path(__file__).resolve().parent / "data"
+MRT_DIR = DATA_DIR / "mrt"
+ROA_DIR = DATA_DIR / "roa"
 
 
 def get_origin(as_path_attr):
@@ -18,8 +21,8 @@ def get_origin(as_path_attr):
 
 def parse_updates():
     rows = []
-    for path in sorted(glob.glob(MRT_GLOB)):
-        for entry in Reader(path):
+    for path in sorted(MRT_DIR.glob("updates.*")):
+        for entry in Reader(str(path)):
             d = entry.data
             msg = d.get("bgp_message")
             if not msg or 2 not in msg["type"]:       # UPDATE only
@@ -35,7 +38,7 @@ def parse_updates():
             for n in msg.get("nlri", []):             # IPv4 prefixes only
                 rows.append((ts, f'{n["prefix"]}/{n["length"]}', origin, peer))
     rows.sort(key=lambda r: r[0])
-    with open("data/updates.csv", "w", newline="", encoding="utf-8") as f:
+    with (DATA_DIR / "updates.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["ts", "prefix", "origin_asn", "peer_asn"])
         w.writerows(rows)
@@ -56,11 +59,11 @@ def to_epoch(s):
 
 def align_roas(t_min, t_max):
     kept = dropped_time = dropped_v6 = 0
-    with open("data/roa/roas-aligned.csv", "w", newline="", encoding="utf-8") as out:
+    with (ROA_DIR / "roas-aligned.csv").open("w", newline="", encoding="utf-8") as out:
         w = csv.writer(out)
         w.writerow(["asn", "prefix", "maxlen", "not_before", "not_after", "tal"])
-        for path in glob.glob(ROA_GLOB):
-            tal = os.path.basename(path).split("-")[0]
+        for path in ROA_DIR.glob("*.csv.xz"):
+            tal = path.name.split("-")[0]
             with lzma.open(path, "rt", encoding="utf-8") as f:
                 try:
                     next(f)                           # skip header
@@ -91,7 +94,7 @@ def run():
     fmt = lambda t: datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"Updates: {len(rows)} | window {fmt(t_min)} -> {fmt(t_max)}")
 
-    with open("data/window.json", "w") as f:
+    with (DATA_DIR / "window.json").open("w", encoding="utf-8") as f:
         json.dump({"t_min": t_min, "t_max": t_max}, f)
 
     kept, dropped, v6 = align_roas(t_min, t_max)

@@ -1,5 +1,8 @@
-import numpy as np
+from __future__ import annotations
+
+import ipaddress
 from enum import Enum
+
 
 class status(Enum):
     VALID = 1
@@ -7,9 +10,10 @@ class status(Enum):
     SUBPREFIX_ANOMALY = 3
     UNKNOWN = 4
 
+
 class rule_engine:
-    class bgp_data: #this will be stored as satellite data in the trie
-        def __init__(self, asn, max_len = 32):
+    class bgp_data:  # this will be stored as satellite data in the trie
+        def __init__(self, asn, max_len=32):
             self.asn = asn
             self.max_len = max_len
 
@@ -17,32 +21,41 @@ class rule_engine:
         def __init__(self):
             self.root = {}
 
-        def insert(self, network_address, data = None):
+        def insert(self, network_address, prefix_length, data=None):
             node = self.root
-            for i in range(31, -1, -1):
+            if prefix_length == 0:
+                node["data"] = data
+                return
+            for i in range(31, 31 - prefix_length, -1):
                 bit = (network_address >> i) & 1
                 if bit not in node:
                     node[bit] = {}
                 node = node[bit]
-            self.data = data
+            node["data"] = data
 
         def search(self, network_address):
             node = self.root
+            best_match = self.root.get("data")
             for i in range(31, -1, -1):
                 bit = (network_address >> i) & 1
                 if bit not in node:
-                    return False
+                    break
                 node = node[bit]
-            return self.data is not None
+                if "data" in node and node["data"] is not None:
+                    best_match = node["data"]
+            return best_match
 
+    @staticmethod
     def pref_parser(prefix):
-        parts = prefix.split('/')
-        network_address = int(np.sum([int(x) << (8 * (3 - i)) for i, x in enumerate(parts[0].split('.'))]))
-        prefix_length = int(parts[1])
+        network = ipaddress.ip_network(prefix, strict=False)
+        network_address = int(network.network_address)
+        prefix_length = int(network.prefixlen)
         return network_address, prefix_length
 
-    def rule_baseline(self, asn, prefix, data = None):
-        _, prefix_length = self.pref_parser(prefix)
+    def rule_baseline(self, asn, prefix, data=None):
+        network_address, prefix_length = self.pref_parser(prefix)
+        if data is None:
+            data = self.trie.search(network_address)
         if data is None:
             return status.UNKNOWN
         if asn != data.asn:
@@ -52,8 +65,8 @@ class rule_engine:
         return status.VALID
 
     def __init__(self, full_data):
+        self.trie = self.radix_trie()
         for asn, max_len, prefix in full_data:
-            network_address, _ = self.pref_parser(prefix)
+            network_address, prefix_length = self.pref_parser(prefix)
             data = self.bgp_data(asn, max_len)
-            self.trie.insert(network_address, data)
-        
+            self.trie.insert(network_address, prefix_length, data)
