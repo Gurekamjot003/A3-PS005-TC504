@@ -1,11 +1,6 @@
 import csv
 from pathlib import Path
 
-if __package__ in (None, ""):
-    from rule_engine import rule_engine
-else:
-    from .rule_engine import rule_engine
-
 
 def _resolve_data_path(path):
     p = Path(path)
