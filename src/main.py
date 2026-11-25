@@ -18,4 +18,6 @@ if __name__ == "__main__":
     print("Processing updates...")
     for ts, prefix, origin_asn in load_update_tuples():
         result = engine.rule_baseline(origin_asn, prefix)
+        if result is None:
+            continue
         print(f"Timestamp: {ts}, Prefix: {prefix}, Origin ASN: {origin_asn}, Result: {result.name}")

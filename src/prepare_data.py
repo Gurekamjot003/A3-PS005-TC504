@@ -36,7 +36,8 @@ def parse_updates():
             ts = int(next(iter(d["timestamp"])))      # epoch seconds (UTC)
             peer = int(d["peer_as"])
             for n in msg.get("nlri", []):             # IPv4 prefixes only
-                rows.append((ts, f'{n["prefix"]}/{n["length"]}', origin, peer))
+                if ":" not in n["prefix"]:
+                    rows.append((ts, f'{n["prefix"]}/{n["length"]}', origin, peer))
     rows.sort(key=lambda r: r[0])
     with (DATA_DIR / "updates.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -58,7 +59,7 @@ def to_epoch(s):
 
 
 def align_roas(t_min, t_max):
-    kept = dropped_time = dropped_v6 = 0
+    kept = dropped_time = 0
     with (ROA_DIR / "roas-aligned.csv").open("w", newline="", encoding="utf-8") as out:
         w = csv.writer(out)
         w.writerow(["asn", "prefix", "maxlen", "not_before", "not_after", "tal"])
@@ -74,8 +75,7 @@ def align_roas(t_min, t_max):
                     if len(p) < 6:
                         continue
                     _, asn, prefix, maxlen, nb_raw, na_raw = p[:6]
-                    if ":" in prefix:                 # IPv4 only
-                        dropped_v6 += 1
+                    if ":" in prefix:
                         continue
                     nb, na = to_epoch(nb_raw), to_epoch(na_raw)
                     if (nb is not None and nb > t_min) or (na is not None and na < t_max):
@@ -83,7 +83,7 @@ def align_roas(t_min, t_max):
                         continue
                     w.writerow([asn.replace("AS", ""), prefix, maxlen, nb_raw, na_raw, tal])
                     kept += 1
-    return kept, dropped_time, dropped_v6
+    return kept, dropped_time
 
 
 def run():
@@ -97,8 +97,8 @@ def run():
     with (DATA_DIR / "window.json").open("w", encoding="utf-8") as f:
         json.dump({"t_min": t_min, "t_max": t_max}, f)
 
-    kept, dropped, v6 = align_roas(t_min, t_max)
-    print(f"ROAs kept: {kept} | dropped (not valid in window): {dropped} | dropped (IPv6): {v6}")
+    kept, dropped = align_roas(t_min, t_max)
+    print(f"ROAs kept: {kept} | dropped (not valid in window): {dropped}")
 
 
 if __name__ == "__main__":
