@@ -5,7 +5,7 @@ if __package__ in (None, ""):
     from rule_engine import rule_engine
 else:
     from .roa_tuples import load_roa_tuples
-    from roa_tuples import load_update_tuples
+    from .roa_tuples import load_update_tuples
     from .rule_engine import rule_engine
 
 
